@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="eng">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+
+    .chart-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 100%;
+    }
+
+    .user-block {
+      border-radius: 10px;
+      margin: 20px;
+      padding: 18.75px;
+      border: 1px solid #E4E2E9;
+      background-color: #FFFFFF;
+      cursor: pointer;
+      position: relative;
+      transition: background-color 0.3s ease-in-out;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 220px;
+    }
+
+    .user-info {
+      margin-top: 13px;
+      font-size: 20px;
+      color: #08011E;
+      cursor: pointer;
+      text-align: center;
+      width: 100%;
+    }
+
+    .user-position {
+      margin-top: 3px;
+      font-size: 14px;
+      color: #716E7B;
+      text-align: center;
+      width: 100%;
+    }
+
+    .details-button {
+      margin-top: auto;
+      padding: 3px 6px;
+      background-color: rgb(41, 151, 255);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 10px;
+      transition: background-color 0.3s ease-in-out;
+      align-self: flex-end;
+    }
+
+    .details-button:hover {
+      background-color: #45a049;
+    }
+
+    .highlighted {
+      background-color: rgba(255, 255, 200, 0.3) !important;
+    }
+
+    .link {
+      stroke-dasharray: 5, 5;
+    }
+
+    [id705766|@media] screen and (max-width: 768px) {
+      .user-block {
+        padding: 15px;
+      }
+    }
+    </style>
+</head>
+
+<body>
+
+    <input type="text" id="userSearch" placeholder="Поиск по ключевым словам" onkeypress="handleKeyPress(event)">
+    <button onclick="searchUser()">Найти</button>
+
+    <!-- Добавленные кнопки -->
+    <button onclick="highlightSector('412')">Подсветить 412 сектор</button>
+    <button onclick="highlightDepartment('41')">Подсветить 41 отдел</button>
+    <button onclick="clearHighlighting()">Очистить</button>
+
+    <div class="chart-container"></div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-org-chart@3.1.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-flextree@2.1.2/build/d3-flextree.js"></script>
+    <script>
+        // Ваш JavaScript остается неизменным
+
+        function searchUser() {
+            const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+            const userBlocks = d3.selectAll('.user-block');
+
+            userBlocks.each(function () {
+                const userData = d3.select(this).text().toLowerCase();
+
+                if (userData.includes(searchTerm)) {
+                    d3.select(this).classed('highlighted', true);
+                    expandAndHighlightTree(this);
+                } else {
+                    d3.select(this).classed('highlighted', false);
+                }
+            });
+        }
+
+        function highlightSector(sectorId) {
+            highlightKeyword(sectorId);
+        }
+
+        function highlightDepartment(departmentId) {
+            highlightKeyword(departmentId);
+        }
+
+        function highlightKeyword(keyword) {
+            const userBlocks = d3.selectAll('.user-block');
+            userBlocks.each(function () {
+                const userData = d3.select(this).text().toLowerCase();
+
+                if (userData.includes(keyword)) {
+                    d3.select(this).classed('highlighted', true);
+                    expandAndHighlightTree(this);
+                } else {
+                    d3.select(this).classed('highlighted', false);
+                }
+            });
+        }
+
+        function clearHighlighting() {
+            const userBlocks = d3.selectAll('.user-block');
+            userBlocks.classed('highlighted', false);
+            chart.clearHighlighting();
+        }
+
+        function expandAndHighlightTree(element) {
+            const nodeData = d3.select(element).datum(); // Используем d3.select(element) вместо d3.select(element.parentNode)
+            chart.setUpToTheRootHighlighted(nodeData.id).render().fit();
+        }
+
+       var chart = null;
+
+    d3.csv(
+      'https://raw.githubusercontent.com/Potapozavr/Site/main/data-oracle.csv'
+    ).then((data) => {
+      chart = new d3.OrgChart()
+        .nodeHeight((d) => 106.25 + 25)
+        .nodeWidth((d) => 220 + 220)
+        .childrenMargin((d) => 25)
+        .compactMarginBetween((d) => 25)
+        .compactMarginPair((d) => 30)
+        .neighbourMargin((a, b) => 45)
+        .nodeUpdate(function () {
+          d3.select(this).select('.node-rect').attr('stroke', 'none');
+        })
+        .nodeContent(function (d, i, arr, state) {
+          const isChildNode = d.parent !== null;
+          const userBlockClass = isChildNode ? 'user-block child-node' : 'user-block';
+
+          return `
+      <div class="${userBlockClass}">
+        <div class="user-info" onclick="viewUserProfile('${d.data.id}')">${d.data.position}</div>
+        <div class="user-position" onclick="viewUserProfile('${d.data.id}')">${d.data.name}</div>
+        <button class="details-button" onclick="viewUserProfile('${d.data.id}')">Подробно</button>
+      </div>
+    `;
+        })
+        .container('.chart-container').data(data)
+        .render();
+    });
+
+    function viewUserProfile(userId) {
+      // Реализуйте логику перехода на страницу пользователя по его идентификатору
+    }
+
+    // Обработчик изменения размера окна
+    window.addEventListener('resize', function () {
+      chart.render().fit();
+    });
+  </script>
+</body>
+
+</html>
